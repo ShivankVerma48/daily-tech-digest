@@ -1,0 +1,46 @@
+name: Daily Tech Digest Bot
+
+on:
+  schedule:
+    # Runs at 04:00 UTC (09:30 IST) every day
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Allows manual trigger from the "Actions" tab anytime
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run daily digest script
+        run: python fetch_daily.py
+
+      - name: Commit and push changes
+        run: |
+          # Git author identity for GitHub green square contribution attribution
+          git config user.name "ShivankVerma48"
+          git config user.email "shivankverma571@gmail.com"
+
+          # Stage all changes
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes detected. Creating a timestamp heartbeat."
+            echo "$(date -u) - Heartbeat" >> activity.log
+            git add activity.log
+            git commit -m "chore(daily): heartbeat update $(date -u +'%Y-%m-%d') [skip ci]"
+          else
+            git commit -m "docs(daily): automated tech digest for $(date -u +'%Y-%m-%d') [skip ci]"
+          fi
+
+          git push origin main
